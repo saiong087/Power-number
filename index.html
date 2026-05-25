@@ -46,7 +46,6 @@
             transition: all 0.8s cubic-bezier(0.25, 1, 0.3, 1);
         }
 
-        /* เมื่อกดเริ่มเฉลย (โจทย์ย้ายไปซ้ายบน ย่อเล็กลงอีกนิดเพื่อประหยัดที่) */
         .problem-box.solving {
             top: 15px;
             left: 20px;
@@ -65,7 +64,7 @@
         }
         .problem-display { font-size: 34px; margin: 15px 0; min-height: 60px; }
 
-        /* พื้นที่แสดงวิธีทำตรงกลาง ขยายความกว้างเพื่อรองรับ 2 ฝั่ง */
+        /* พื้นที่แสดงวิธีทำ */
         .solution-area {
             position: relative;
             margin-top: 80px; 
@@ -74,26 +73,29 @@
             flex-direction: column;
             align-items: center;
             justify-content: center; 
-            gap: 8px; /* ลดช่องว่างเพื่อให้ 7 บรรทัดพอดีจอ */
+            gap: 8px; 
             padding: 0 20px;
-            margin-left: 100px; /* หลบปุ่มด้านซ้าย */
+            margin-left: 100px; 
         }
 
-        /* กล่องวิธีทำ แบ่งเป็น 2 ส่วน (สมการ และ คำอธิบาย) */
+        /* กล่องวิธีทำแต่ละบรรทัด */
         .step-card {
             background: white;
             padding: 5px 20px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.04);
             opacity: 0;
+            /* เตรียม border โปร่งใสไว้ เพื่อไม่ให้ขนาดกล่องกระตุกตอนแสดงกรอบสีฟ้า */
+            border: 2px solid transparent;
             transform: translateY(30px) scale(0.9);
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             
-            /* Flex สำหรับแบ่งครึ่ง */
             display: flex;
             align-items: center;
             width: 100%;
             max-width: 900px;
+            position: relative; /* สำหรับการจัดลำดับชั้น z-index */
+            cursor: pointer; /* เปลี่ยนเคอร์เซอร์เป็นรูปนิ้วชี้เวลาแตะ */
         }
 
         .step-card.visible {
@@ -101,20 +103,28 @@
             transform: translateY(0) scale(1);
         }
 
-        /* ฝั่งซ้าย: สมการคณิตศาสตร์ */
+        /* เอฟเฟกต์ตอนแตะขยาย (ซูม 12% ไม่เกินจอ) */
+        .step-card.zoomed {
+            transform: scale(1.12) !important; /* ขยายขนาดกล่อง */
+            z-index: 50; /* ดันกล่องนี้ให้ลอยอยู่เหนือกล่องอื่นๆ */
+            background-color: #f0f9ff; /* เปลี่ยนสีพื้นหลังเป็นฟ้าอ่อนๆ */
+            border-color: #93c5fd; /* เพิ่มกรอบสีฟ้า */
+            box-shadow: 0 15px 40px rgba(59, 130, 246, 0.15); /* เพิ่มเงาให้ดูเด้งออกมา */
+        }
+
+        /* ฝั่งซ้าย: สมการ */
         .math-part {
-            flex: 0 0 45%; /* กินพื้นที่ 45% */
+            flex: 0 0 45%; 
             text-align: right;
             padding-right: 20px;
             font-size: 24px; 
-            border-right: 2px dashed #cbd5e1; /* เส้นประคั่นกลาง */
+            border-right: 2px dashed #cbd5e1; 
         }
-        /* ดัดแปลง KaTeX ไม่ให้มีระยะขอบบนล่างเยอะเกินไป */
         .math-part .katex-display { margin: 10px 0; }
 
-        /* ฝั่งขวา: คำอธิบายภาษาไทย */
+        /* ฝั่งขวา: คำอธิบาย */
         .desc-part {
-            flex: 1; /* กินพื้นที่ที่เหลือ */
+            flex: 1; 
             text-align: left;
             padding-left: 20px;
             font-size: 18px;
@@ -122,7 +132,7 @@
             font-weight: 600;
         }
 
-        /* แถบควบคุม (ซ้ายล่าง และโปร่งแสง) */
+        /* แถบควบคุม */
         .controls {
             position: fixed;
             bottom: 30px;
@@ -180,7 +190,6 @@
     </div>
 
     <script>
-        // เปลี่ยนแปลงโครงสร้างข้อมูล เพื่อให้มีคำอธิบาย .desc ในแต่ละขั้น
         const mathProblems = [
             {
                 problem: "\\frac{(x^2 y^{-3})^2}{x^{-4} y^2}",
@@ -266,22 +275,31 @@
             solArea.innerHTML = '';
             
             currentProblem.steps.forEach((stepObj, index) => {
-                // สร้างกล่องหลัก
                 const stepCard = document.createElement('div');
                 stepCard.className = 'step-card';
                 stepCard.id = 'step-' + index;
 
-                // สร้างฝั่งซ้าย (สมการ)
+                // --- เพิ่มระบบคลิกเพื่อซูม ---
+                stepCard.onclick = function() {
+                    // หากไม่ได้ซูมอยู่ ให้ล้างสถานะซูมของกล่องอื่นทั้งหมดก่อน
+                    const isCurrentlyZoomed = this.classList.contains('zoomed');
+                    document.querySelectorAll('.step-card').forEach(card => {
+                        card.classList.remove('zoomed');
+                    });
+                    // สลับสถานะของกล่องที่ถูกแตะ
+                    if (!isCurrentlyZoomed) {
+                        this.classList.add('zoomed');
+                    }
+                };
+
                 const mathPart = document.createElement('div');
                 mathPart.className = 'math-part';
                 katex.render("= " + stepObj.eq, mathPart, { displayMode: true });
 
-                // สร้างฝั่งขวา (คำอธิบาย)
                 const descPart = document.createElement('div');
                 descPart.className = 'desc-part';
                 descPart.innerText = stepObj.desc;
 
-                // นำมาประกอบกัน
                 stepCard.appendChild(mathPart);
                 stepCard.appendChild(descPart);
                 solArea.appendChild(stepCard);
