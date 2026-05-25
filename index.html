@@ -7,116 +7,207 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+        
         body { 
+            margin: 0; 
             font-family: 'Sarabun', sans-serif; 
-            background-color: #f0fdf4; 
-            display: flex; flex-direction: column; align-items: center; padding: 40px 20px; 
+            background-color: #f8fafc; 
+            overflow-x: hidden; /* ป้องกันการเลื่อนซ้ายขวา */
         }
-        .card { 
-            background: white; padding: 40px; border-radius: 20px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
-            width: 100%; max-width: 600px; text-align: center; 
+
+        .app-container {
+            position: relative;
+            width: 100vw;
+            min-height: 100vh;
+            padding-bottom: 100px; /* เว้นที่ให้ปุ่มด้านล่าง */
+            box-sizing: border-box;
         }
-        .tags-container { margin-bottom: 20px; min-height: 30px; }
+
+        /* กล่องโจทย์ (ตั้งค่าเริ่มต้นให้อยู่กลางจอ) */
+        .problem-box {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 85%;
+            max-width: 650px;
+            z-index: 10;
+            /* แอนิเมชันตอนเคลื่อนที่ */
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.3, 1);
+        }
+
+        /* เมื่อกดเริ่มเฉลย (โจทย์ย้ายไปซ้ายบนและย่อขนาด) */
+        .problem-box.solving {
+            top: 20px;
+            left: 20px;
+            transform: translate(0, 0) scale(0.65);
+            transform-origin: top left;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin: 0;
+            padding: 20px 30px;
+        }
+
+        .tags-container { margin-bottom: 20px; }
         .tag { 
-            background: #dbeafe; color: #1e3a8a; padding: 6px 12px; 
-            border-radius: 20px; font-size: 14px; margin: 0 4px; display: inline-block; 
+            background: #dbeafe; color: #1e3a8a; padding: 6px 14px; 
+            border-radius: 20px; font-size: 15px; margin: 4px; display: inline-block; 
             font-weight: 600;
         }
-        .problem-display { 
-            font-size: 32px; margin: 30px 0; min-height: 80px; 
-            display: flex; justify-content: center; align-items: center;
+        .problem-display { font-size: 38px; margin: 20px 0; min-height: 80px; }
+
+        /* พื้นที่แสดงวิธีทำตรงกลางจอ */
+        .solution-area {
+            position: relative;
+            margin-top: 150px; /* เว้นที่ให้โจทย์ที่ย้ายไปด้านบน */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 0 20px;
         }
-        .btn-group { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+
+        .step-card {
+            background: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            font-size: 32px;
+            /* ตั้งค่าเริ่มต้นให้ซ่อนและอยู่ต่ำลงไป */
+            opacity: 0;
+            transform: translateY(80px) scale(0.8);
+            /* แอนิเมชันตอนปรากฏตัว (เด้งนิดๆ) */
+            transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .step-card.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* แถบควบคุมด้านล่าง (Fixed Control Bar) */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 15px;
+            z-index: 20;
+        }
+
         button { 
-            border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; 
-            font-size: 16px; font-family: 'Sarabun'; font-weight: 600;
-            transition: all 0.2s; color: white;
+            border: none; padding: 14px 28px; border-radius: 15px; cursor: pointer; 
+            font-size: 18px; font-family: 'Sarabun'; font-weight: 700;
+            transition: all 0.2s; color: white; display: flex; align-items: center; gap: 8px;
         }
-        .btn-solve { background: #3b82f6; }
-        .btn-solve:hover { background: #2563eb; transform: translateY(-2px); }
-        .btn-solve:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
-        .btn-random { background: #10b981; }
-        .btn-random:hover { background: #059669; transform: translateY(-2px); }
-        
-        /* อนิเมชันเลื่อนวิธีทำทีละขั้น */
-        .solution-container { 
-            margin-top: 30px; text-align: left; padding-left: 20px; 
-            border-left: 4px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px;
-        }
-        .step { 
-            font-size: 22px; 
-            opacity: 0; transform: translateY(-15px); 
-            transition: opacity 0.6s ease, transform 0.6s ease; 
-        }
-        .step.visible { opacity: 1; transform: translateY(0); }
+        button:active { transform: scale(0.95); }
+        .btn-random { background: #64748b; }
+        .btn-random:hover { background: #475569; }
+        .btn-solve { background: #8b5cf6; }
+        .btn-solve:hover { background: #7c3aed; }
+        .btn-next { background: #10b981; display: none; }
+        .btn-next:hover { background: #059669; }
+
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2 style="color: #334155; margin-top: 0;">โจทย์เลขยกกำลัง</h2>
-        <div class="tags-container" id="tags"></div>
-        
-        <div class="problem-display" id="problem"></div>
-        
-        <div class="btn-group">
-            <button class="btn-random" onclick="loadRandomProblem()">🎲 สุ่มโจทย์ใหม่</button>
-            <button class="btn-solve" id="solveBtn" onclick="showSolution()">▶️ แสดงวิธีทำทีละขั้น</button>
+    <div class="app-container">
+        <div class="problem-box" id="problem-box">
+            <h2 style="color: #334155; margin-top: 0; font-size: 24px;">จงหาผลลัพธ์</h2>
+            <div class="tags-container" id="tags"></div>
+            <div class="problem-display" id="problem"></div>
         </div>
 
-        <div class="solution-container" id="solution"></div>
+        <div class="solution-area" id="solution-area"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-random" onclick="loadRandomProblem()">🎲 สุ่มโจทย์</button>
+        <button class="btn-solve" id="btn-start" onclick="startSolve()">▶️ เริ่มเฉลย</button>
+        <button class="btn-next" id="btn-next" onclick="showNextStep()">⬇️ เฉลยขั้นต่อไป</button>
     </div>
 
     <script>
-        // ฐานข้อมูลโจทย์ สมบัติที่ใช้ และขั้นตอนวิธีทำ (รูปแบบ LaTeX)
+        // ฐานข้อมูลโจทย์เพิ่มสมบัติใหม่ๆ
         const mathProblems = [
             {
-                problem: "\\frac{2^5 \\times 2^3}{2^4}",
-                properties: ["สมบัติการคูณ", "สมบัติการหาร"],
+                problem: "\\frac{(x^2 y^{-3})^2}{x^{-4} y^2}",
+                properties: ["ยกกำลังนอกวงเล็บ", "กำลังซ้อน", "สมบัติการหาร", "เลขชี้กำลังติดลบ"],
                 steps: [
-                    "\\frac{2^{5+3}}{2^4}",
-                    "\\frac{2^8}{2^4}",
-                    "2^{8-4}",
-                    "2^4",
-                    "16"
+                    "\\frac{(x^2)^2 (y^{-3})^2}{x^{-4} y^2}",
+                    "\\frac{x^4 y^{-6}}{x^{-4} y^2}",
+                    "x^{4 - (-4)} y^{-6 - 2}",
+                    "x^{4 + 4} y^{-8}",
+                    "x^8 y^{-8}",
+                    "\\frac{x^8}{y^8}"
                 ]
             },
             {
-                problem: "(3^2)^3 \\times 3^{-4}",
-                properties: ["กำลังซ้อน", "สมบัติการคูณ", "เลขชี้กำลังติดลบ"],
+                problem: "(-3)^2 \\times \\left((-3)^{-2}\\right)^3",
+                properties: ["ฐานเป็นลบยกกำลังคู่", "กำลังซ้อน", "สมบัติการคูณ", "เลขชี้กำลังติดลบ"],
                 steps: [
-                    "3^{2 \\times 3} \\times 3^{-4}",
-                    "3^6 \\times 3^{-4}",
-                    "3^{6 + (-4)}",
-                    "3^2",
-                    "9"
+                    "(-3)^2 \\times (-3)^{-2 \\times 3}",
+                    "(-3)^2 \\times (-3)^{-6}",
+                    "(-3)^{2 + (-6)}",
+                    "(-3)^{-4}",
+                    "\\frac{1}{(-3)^4}",
+                    "\\frac{1}{3^4}",
+                    "\\frac{1}{81}"
                 ]
             },
             {
-                problem: "\\left(\\frac{a^3 b^2}{a b^4}\\right)^2",
-                properties: ["สมบัติการหาร", "กำลังของผลหาร", "เลขชี้กำลังติดลบ"],
+                problem: "\\left( \\frac{2 a^{-1}}{b^2} \\right)^{-3}",
+                properties: ["ยกกำลังนอกวงเล็บ", "กำลังซ้อน", "เลขชี้กำลังติดลบ"],
                 steps: [
-                    "\\left( a^{3-1} b^{2-4} \\right)^2",
-                    "\\left( a^2 b^{-2} \\right)^2",
-                    "(a^2)^2 (b^{-2})^2",
-                    "a^4 b^{-4}",
-                    "\\frac{a^4}{b^4}"
+                    "\\frac{2^{-3} (a^{-1})^{-3}}{(b^2)^{-3}}",
+                    "\\frac{2^{-3} a^3}{b^{-6}}",
+                    "\\frac{a^3 b^6}{2^3}",
+                    "\\frac{a^3 b^6}{8}"
+                ]
+            },
+            {
+                problem: "\\frac{(-2)^4 \\times 2^{-3}}{2^{-1}}",
+                properties: ["ฐานเป็นลบยกกำลังคู่", "สมบัติการคูณ", "สมบัติการหาร", "เลขชี้กำลังติดลบ"],
+                steps: [
+                    "\\frac{2^4 \\times 2^{-3}}{2^{-1}}",
+                    "\\frac{2^{4 + (-3)}}{2^{-1}}",
+                    "\\frac{2^1}{2^{-1}}",
+                    "2^{1 - (-1)}",
+                    "2^2",
+                    "4"
                 ]
             }
         ];
 
         let currentProblem = null;
-        let stepInterval = null;
+        let currentStepIndex = 0;
 
-        // ฟังก์ชันสุ่มโจทย์
+        // ฟังก์ชันสุ่มโจทย์และรีเซ็ตหน้าจอ
         function loadRandomProblem() {
-            clearInterval(stepInterval); // เคลียร์อนิเมชันที่ค้างอยู่
-            document.getElementById('solution').innerHTML = ''; // ล้างวิธีทำ
-            document.getElementById('solveBtn').disabled = false; // เปิดปุ่มแสดงวิธีทำ
+            // รีเซ็ตการแสดงผล
+            const problemBox = document.getElementById('problem-box');
+            problemBox.classList.remove('solving'); // นำคลาสแก้โจทย์ออก เพื่อให้กล่องกลับมาตรงกลาง
+            
+            document.getElementById('solution-area').innerHTML = ''; // ล้างวิธีทำ
+            currentStepIndex = 0;
 
-            // สุ่มโจทย์ที่ไม่ซ้ำกับข้อเดิม
+            // จัดการปุ่ม
+            document.getElementById('btn-start').style.display = 'flex';
+            document.getElementById('btn-next').style.display = 'none';
+
+            // สุ่มโจทย์ใหม่
             let randomIndex;
             do {
                 randomIndex = Math.floor(Math.random() * mathProblems.length);
@@ -124,44 +215,58 @@
             
             currentProblem = mathProblems[randomIndex];
 
-            // แสดง Tags สมบัติ
+            // อัปเดต Tags
             const tagsDiv = document.getElementById('tags');
             tagsDiv.innerHTML = currentProblem.properties.map(prop => `<span class="tag">${prop}</span>`).join('');
 
-            // เรนเดอร์โจทย์ด้วย KaTeX
+            // เรนเดอร์สมการโจทย์
             katex.render(currentProblem.problem, document.getElementById('problem'), { displayMode: true });
         }
 
-        // ฟังก์ชันแสดงวิธีทำทีละขั้นพร้อมอนิเมชัน
-        function showSolution() {
-            document.getElementById('solveBtn').disabled = true; // ป้องกันการกดซ้ำ
-            const solutionDiv = document.getElementById('solution');
-            solutionDiv.innerHTML = ''; 
+        // ฟังก์ชันเมื่อกด "เริ่มเฉลย"
+        function startSolve() {
+            // ดันกล่องโจทย์ไปมุมซ้ายบน
+            document.getElementById('problem-box').classList.add('solving');
+            
+            // สลับปุ่มเป็น "เฉลยขั้นต่อไป"
+            document.getElementById('btn-start').style.display = 'none';
+            document.getElementById('btn-next').style.display = 'flex';
 
-            const steps = currentProblem.steps;
-            let currentStepIndex = 0;
-
-            // เตรียม Element ของแต่ละบรรทัดไว้ล่วงหน้า
-            steps.forEach((stepMath) => {
-                const stepEl = document.createElement('div');
-                stepEl.className = 'step';
-                katex.render("= " + stepMath, stepEl, { displayMode: false });
-                solutionDiv.appendChild(stepEl);
+            // เตรียมกล่องวิธีทำรอไว้ (แต่ยังล่องหนอยู่)
+            const solArea = document.getElementById('solution-area');
+            solArea.innerHTML = '';
+            
+            currentProblem.steps.forEach((step, index) => {
+                const stepCard = document.createElement('div');
+                stepCard.className = 'step-card';
+                stepCard.id = 'step-' + index;
+                katex.render("= " + step, stepCard, { displayMode: true });
+                solArea.appendChild(stepCard);
             });
-
-            // ใช้ Interval เพื่อหน่วงเวลาให้ขยับปรากฏทีละบรรทัด (ทุกๆ 1 วินาที)
-            const stepElements = document.querySelectorAll('.step');
-            stepInterval = setInterval(() => {
-                if (currentStepIndex < stepElements.length) {
-                    stepElements[currentStepIndex].classList.add('visible');
-                    currentStepIndex++;
-                } else {
-                    clearInterval(stepInterval);
-                }
-            }, 1000); // ปรับเลข 1000 (1 วินาที) เพื่อความช้า/เร็วของการแสดงผล
         }
 
-        // โหลดโจทย์ข้อแรกทันทีที่เปิดหน้าเว็บ
+        // ฟังก์ชันเมื่อกด "เฉลยขั้นต่อไป"
+        function showNextStep() {
+            if (currentStepIndex < currentProblem.steps.length) {
+                // ทำให้บรรทัดปัจจุบันปรากฏ
+                const currentCard = document.getElementById('step-' + currentStepIndex);
+                currentCard.classList.add('visible');
+                
+                currentStepIndex++;
+
+                // เลื่อนหน้าจอลงอัตโนมัติหากวิธีทำเริ่มยาว (หน่วงเวลาเล็กน้อยให้แอนิเมชันเล่นก่อน)
+                setTimeout(() => {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }, 100);
+            }
+
+            // ถ้าเฉลยครบทุกบรรทัดแล้ว ให้ซ่อนปุ่ม "เฉลยขั้นต่อไป"
+            if (currentStepIndex >= currentProblem.steps.length) {
+                document.getElementById('btn-next').style.display = 'none';
+            }
+        }
+
+        // โหลดโจทย์แรกเมื่อเปิดหน้าเว็บ
         window.onload = loadRandomProblem;
     </script>
 </body>
