@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive สื่อเลขยกกำลัง ม.2</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap');
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            background-color: #f0fdf4; 
+            display: flex; flex-direction: column; align-items: center; padding: 40px 20px; 
+        }
+        .card { 
+            background: white; padding: 40px; border-radius: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+            width: 100%; max-width: 600px; text-align: center; 
+        }
+        .tags-container { margin-bottom: 20px; min-height: 30px; }
+        .tag { 
+            background: #dbeafe; color: #1e3a8a; padding: 6px 12px; 
+            border-radius: 20px; font-size: 14px; margin: 0 4px; display: inline-block; 
+            font-weight: 600;
+        }
+        .problem-display { 
+            font-size: 32px; margin: 30px 0; min-height: 80px; 
+            display: flex; justify-content: center; align-items: center;
+        }
+        .btn-group { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        button { 
+            border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; 
+            font-size: 16px; font-family: 'Sarabun'; font-weight: 600;
+            transition: all 0.2s; color: white;
+        }
+        .btn-solve { background: #3b82f6; }
+        .btn-solve:hover { background: #2563eb; transform: translateY(-2px); }
+        .btn-solve:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
+        .btn-random { background: #10b981; }
+        .btn-random:hover { background: #059669; transform: translateY(-2px); }
+        
+        /* อนิเมชันเลื่อนวิธีทำทีละขั้น */
+        .solution-container { 
+            margin-top: 30px; text-align: left; padding-left: 20px; 
+            border-left: 4px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px;
+        }
+        .step { 
+            font-size: 22px; 
+            opacity: 0; transform: translateY(-15px); 
+            transition: opacity 0.6s ease, transform 0.6s ease; 
+        }
+        .step.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2 style="color: #334155; margin-top: 0;">โจทย์เลขยกกำลัง</h2>
+        <div class="tags-container" id="tags"></div>
+        
+        <div class="problem-display" id="problem"></div>
+        
+        <div class="btn-group">
+            <button class="btn-random" onclick="loadRandomProblem()">🎲 สุ่มโจทย์ใหม่</button>
+            <button class="btn-solve" id="solveBtn" onclick="showSolution()">▶️ แสดงวิธีทำทีละขั้น</button>
+        </div>
+
+        <div class="solution-container" id="solution"></div>
+    </div>
+
+    <script>
+        // ฐานข้อมูลโจทย์ สมบัติที่ใช้ และขั้นตอนวิธีทำ (รูปแบบ LaTeX)
+        const mathProblems = [
+            {
+                problem: "\\frac{2^5 \\times 2^3}{2^4}",
+                properties: ["สมบัติการคูณ", "สมบัติการหาร"],
+                steps: [
+                    "\\frac{2^{5+3}}{2^4}",
+                    "\\frac{2^8}{2^4}",
+                    "2^{8-4}",
+                    "2^4",
+                    "16"
+                ]
+            },
+            {
+                problem: "(3^2)^3 \\times 3^{-4}",
+                properties: ["กำลังซ้อน", "สมบัติการคูณ", "เลขชี้กำลังติดลบ"],
+                steps: [
+                    "3^{2 \\times 3} \\times 3^{-4}",
+                    "3^6 \\times 3^{-4}",
+                    "3^{6 + (-4)}",
+                    "3^2",
+                    "9"
+                ]
+            },
+            {
+                problem: "\\left(\\frac{a^3 b^2}{a b^4}\\right)^2",
+                properties: ["สมบัติการหาร", "กำลังของผลหาร", "เลขชี้กำลังติดลบ"],
+                steps: [
+                    "\\left( a^{3-1} b^{2-4} \\right)^2",
+                    "\\left( a^2 b^{-2} \\right)^2",
+                    "(a^2)^2 (b^{-2})^2",
+                    "a^4 b^{-4}",
+                    "\\frac{a^4}{b^4}"
+                ]
+            }
+        ];
+
+        let currentProblem = null;
+        let stepInterval = null;
+
+        // ฟังก์ชันสุ่มโจทย์
+        function loadRandomProblem() {
+            clearInterval(stepInterval); // เคลียร์อนิเมชันที่ค้างอยู่
+            document.getElementById('solution').innerHTML = ''; // ล้างวิธีทำ
+            document.getElementById('solveBtn').disabled = false; // เปิดปุ่มแสดงวิธีทำ
+
+            // สุ่มโจทย์ที่ไม่ซ้ำกับข้อเดิม
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * mathProblems.length);
+            } while (mathProblems[randomIndex] === currentProblem && mathProblems.length > 1);
+            
+            currentProblem = mathProblems[randomIndex];
+
+            // แสดง Tags สมบัติ
+            const tagsDiv = document.getElementById('tags');
+            tagsDiv.innerHTML = currentProblem.properties.map(prop => `<span class="tag">${prop}</span>`).join('');
+
+            // เรนเดอร์โจทย์ด้วย KaTeX
+            katex.render(currentProblem.problem, document.getElementById('problem'), { displayMode: true });
+        }
+
+        // ฟังก์ชันแสดงวิธีทำทีละขั้นพร้อมอนิเมชัน
+        function showSolution() {
+            document.getElementById('solveBtn').disabled = true; // ป้องกันการกดซ้ำ
+            const solutionDiv = document.getElementById('solution');
+            solutionDiv.innerHTML = ''; 
+
+            const steps = currentProblem.steps;
+            let currentStepIndex = 0;
+
+            // เตรียม Element ของแต่ละบรรทัดไว้ล่วงหน้า
+            steps.forEach((stepMath) => {
+                const stepEl = document.createElement('div');
+                stepEl.className = 'step';
+                katex.render("= " + stepMath, stepEl, { displayMode: false });
+                solutionDiv.appendChild(stepEl);
+            });
+
+            // ใช้ Interval เพื่อหน่วงเวลาให้ขยับปรากฏทีละบรรทัด (ทุกๆ 1 วินาที)
+            const stepElements = document.querySelectorAll('.step');
+            stepInterval = setInterval(() => {
+                if (currentStepIndex < stepElements.length) {
+                    stepElements[currentStepIndex].classList.add('visible');
+                    currentStepIndex++;
+                } else {
+                    clearInterval(stepInterval);
+                }
+            }, 1000); // ปรับเลข 1000 (1 วินาที) เพื่อความช้า/เร็วของการแสดงผล
+        }
+
+        // โหลดโจทย์ข้อแรกทันทีที่เปิดหน้าเว็บ
+        window.onload = loadRandomProblem;
+    </script>
+</body>
+</html>
