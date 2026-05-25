@@ -13,7 +13,6 @@
             margin: 0; 
             font-family: 'Sarabun', sans-serif; 
             background-color: #f8fafc; 
-            /* ล็อกหน้าจอไม่ให้เลื่อนได้เด็ดขาด */
             overflow: hidden; 
             height: 100vh;
             display: flex;
@@ -27,10 +26,10 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-bottom: 80px; /* เว้นที่ให้ปุ่มด้านล่าง */
+            padding-bottom: 20px;
         }
 
-        /* กล่องโจทย์ (ตั้งค่าเริ่มต้นให้อยู่กลางจอ) */
+        /* กล่องโจทย์ */
         .problem-box {
             position: absolute;
             top: 45%;
@@ -47,7 +46,7 @@
             transition: all 0.8s cubic-bezier(0.25, 1, 0.3, 1);
         }
 
-        /* เมื่อกดเริ่มเฉลย (โจทย์ย้ายไปซ้ายบนและย่อขนาดเล็กลงอีกนิดเพื่อประหยัดพื้นที่) */
+        /* กล่องโจทย์เมื่อเริ่มเฉลย (ย้ายไปบนซ้าย) */
         .problem-box.solving {
             top: 20px;
             left: 20px;
@@ -66,26 +65,27 @@
         }
         .problem-display { font-size: 34px; margin: 15px 0; min-height: 60px; }
 
-        /* พื้นที่แสดงวิธีทำ (ใช้ Flex จัดให้อยู่ตรงกลางพอดีกับพื้นที่ที่เหลือ) */
+        /* พื้นที่แสดงวิธีทำตรงกลาง */
         .solution-area {
             position: relative;
-            margin-top: 100px; /* หลบโจทย์ด้านซ้ายบน */
+            margin-top: 100px; 
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* ดันให้อยู่กึ่งกลางหน้าจอเสมอ */
-            gap: 12px; /* ลดระยะห่างระหว่างบรรทัด */
+            justify-content: center; 
+            gap: 12px; 
             padding: 0 20px;
+            /* ดันพื้นที่วิธีทำให้ขยับไปทางขวานิดหน่อย หลบปุ่มด้านซ้าย */
+            margin-left: 80px; 
         }
 
-        /* ปรับขนาดกล่องวิธีทำให้กะทัดรัดขึ้น เพื่อให้พอดีกับจอ iPad แม้มี 7 บรรทัด */
         .step-card {
             background: white;
             padding: 10px 30px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.04);
-            font-size: 26px; /* ลดขนาดฟอนต์ลงนิดหน่อย */
+            font-size: 26px; 
             opacity: 0;
             transform: translateY(40px) scale(0.9);
             transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -96,26 +96,35 @@
             transform: translateY(0) scale(1);
         }
 
-        /* แถบควบคุมด้านล่าง (Fix ไว้ล่างสุด) */
+        /* แถบควบคุม (ย้ายมาซ้ายล่าง เรียงแนวตั้ง และทำให้จาง) */
         .controls {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 10px 20px;
-            border-radius: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            backdrop-filter: blur(10px);
+            bottom: 30px;
+            left: 20px; /* ชิดซ้าย */
+            background: rgba(255, 255, 255, 0.3); /* พื้นหลังโปร่งแสง */
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            backdrop-filter: blur(8px); /* เบลอพื้นหลังเล็กน้อย */
             display: flex;
-            gap: 15px;
+            flex-direction: column; /* เรียงปุ่มแนวตั้ง */
+            gap: 12px;
             z-index: 20;
+            opacity: 0.4; /* ระดับความจางของปุ่ม (ค่าน้อยยิ่งจาง) */
+            transition: opacity 0.3s ease, background 0.3s ease;
+        }
+
+        /* เมื่อเอานิ้วไปแตะหรือเมาส์ชี้ แถบปุ่มจะสว่างขึ้นมา */
+        .controls:hover, .controls:active {
+            opacity: 1; 
+            background: rgba(255, 255, 255, 0.85);
         }
 
         button { 
-            border: none; padding: 12px 24px; border-radius: 15px; cursor: pointer; 
-            font-size: 18px; font-family: 'Sarabun'; font-weight: 700;
-            transition: all 0.2s; color: white; display: flex; align-items: center; gap: 8px;
+            border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; 
+            font-size: 16px; font-family: 'Sarabun'; font-weight: 700;
+            transition: all 0.2s; color: white; display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; /* ให้ปุ่มกว้างเท่ากันในแนวตั้ง */
         }
         button:active { transform: scale(0.95); }
         .btn-random { background: #64748b; }
@@ -146,7 +155,6 @@
     </div>
 
     <script>
-        // แทรก \textcolor{red}{...} ในจุดที่มีการคำนวณหรือเปลี่ยนรูป
         const mathProblems = [
             {
                 problem: "\\frac{(x^2 y^{-3})^2}{x^{-4} y^2}",
@@ -235,7 +243,6 @@
                 const stepCard = document.createElement('div');
                 stepCard.className = 'step-card';
                 stepCard.id = 'step-' + index;
-                // เรนเดอร์สมการด้วย KaTeX
                 katex.render("= " + step, stepCard, { displayMode: true });
                 solArea.appendChild(stepCard);
             });
